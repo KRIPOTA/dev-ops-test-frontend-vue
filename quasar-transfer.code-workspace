@@ -1,0 +1,23 @@
+{
+  "folders": [
+    {
+      "path": "./src/app"
+    },
+    {
+      "path": "./src/pages"
+    },
+    {
+      "path": "./src/widgets"
+    },
+    {
+      "path": "./src/entities"
+    },
+    {
+      "path": "./src/shared"
+    },
+    {
+      "path": "."
+    }
+  ],
+  "settings": {}
+}

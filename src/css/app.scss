@@ -1,0 +1,63 @@
+// app global css in SCSS form
+
+body {
+  font-family: 'PT Sans', Arial, sans-serif;
+  font-size: 15px;
+}
+
+.text-group {
+  font-weight: bold;
+  opacity: 0.4;
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+
+.text-ellipsis {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.title-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  font-weight: bold;
+  letter-spacing: bold;
+  opacity: 0.4;
+}
+
+.description {
+  color: $description;
+}
+
+a {
+  color: $primary;
+}
+
+.required {
+  &::after {
+    content: '*';
+    position: absolute;
+    color: var(--q-negative);
+  }
+}
+
+.error-color {
+  color: var(--q-negative);
+}
+
+.error-text {
+  color: var(--q-negative);
+  font-size: 12px;
+  padding: 5px 5px 0 5px;
+}
+
+.secondary-title {
+  margin: 20px 0 10px 0;
+  text-transform: uppercase;
+  opacity: 0.4;
+  font-size: 12px;
+  letter-spacing: 1px;
+  font-weight: bold;
+}
