@@ -13,9 +13,14 @@ const routes: RouteRecordRaw[] = [
     alias: ['/'],
     children: [
       {
-        path: 'main',
+        path: '',
         name: 'MAIN',
         component: () => import('src/pages/Main.vue'),
+      },
+      {
+        path: '/test',
+        name: 'TEST',
+        component: () => import('src/pages/Test.vue'),
       },
     ],
   },
