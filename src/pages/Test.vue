@@ -1,111 +1,131 @@
 <script setup lang="ts">
-  import { TouchPan } from 'quasar'
-  import { computed, onMounted, ref } from 'vue'
+  import { isBoolean } from 'lodash'
+  import { computed, onMounted, ref, watch } from 'vue'
 
   import AppPageLayout from '../app/layouts/AppPageLayout.vue'
-  import { useTestsStore } from '../entities/tests'
+  import { useQuestionsStore } from '../entities/questions/model/questions.store'
   import { useViewerStore } from '../entities/viewer'
-  import { arrayToObjectByKey } from '../shared/utils'
 
-  const testStore = useTestsStore()
+  const questionsStore = useQuestionsStore()
   const viewerStore = useViewerStore()
 
   //refs
-  const currentQuestionId = ref(0)
-  const panX = ref(0)
-  const panY = ref(0)
+  const currentQuestionIndex = ref(0)
+  const answerIndex = ref(0)
 
   //computed
-  const currentQuestion = computed(() => testStore?.questionsById[currentQuestionId.value])
-  const currentViewerQuestion = computed(() =>
-    viewerStore.currentTaskById[testStore.currentTask?.id || 0]?.questions.find((q) => q.id == currentQuestionId.value)
+  const currentQuestion = computed(() => questionsStore?.questions[currentQuestionIndex.value])
+
+  const questionsIsOver = computed(
+    () => currentQuestionIndex.value == 9 && isBoolean(currentQuestion.value.isAnswerCorrect)
   )
-  const optionById = computed(() => arrayToObjectByKey(currentQuestion.value?.options || [], 'id'))
+
+  const percentAnswerCorrect = computed(() => {
+    const percent = ((currentQuestion.value.countTrueAnswer || 0) / (currentQuestion.value.countPublish || 0)) * 100
+    return Math.ceil(percent || 0)
+  })
 
   //methods
-  const chooseOption = (optionId: number) => {
-    const currentTask = viewerStore.currentTaskById[testStore.currentTask?.id || 0]
+  const chooseOption = (index: number) => {
+    if (isBoolean(currentQuestion.value.isAnswerCorrect)) return
 
-    if (!currentTask) return
+    const isAnswerCorrect = index == currentQuestion.value.correctAnswerIndex
 
-    const isQuestionExist = currentTask.questions.find((q) => q.id == currentQuestion.value?.id)
+    answerIndex.value = index
+    currentQuestion.value.isAnswerCorrect = isAnswerCorrect
 
-    if (isQuestionExist) return
+    if (!viewerStore.viewer) return
 
-    currentTask.questions.push({ id: currentQuestion.value?.id || 0, chooseOptionId: optionId })
-  }
+    viewerStore.initialStats.questionsAnswer = (viewerStore?.initialStats?.questionsAnswer || 0) + 1
+    viewerStore.viewer.stats.questionsAnswer = (viewerStore.viewer?.stats.questionsAnswer || 0) + 1
 
-  const onPan = (e: any) => {
-    const questionIndex = testStore.currentTask?.questions.findIndex((q) => q.id == currentQuestion.value?.id)
-    const isDirectionLeft = e?.direction == 'left'
-    if (questionIndex == 0 && !isDirectionLeft) return
-    panX.value = isDirectionLeft ? -e.distance.x : e.distance.x
-  }
-
-  const onTouchEnd = () => {
-    const innerWidth = window.innerWidth
-    if (panX.value < 0 && Math.abs(panX.value || 0) / innerWidth > 0.6) {
-      currentQuestionId.value = currentQuestionId.value + 1
-    } else if (panX.value > 0 && Math.abs(panX.value || 0) / innerWidth > 0.6) {
-      currentQuestionId.value = currentQuestionId.value - 1
+    if (isAnswerCorrect) {
+      viewerStore.initialStats.questionsAnswerTrue = (viewerStore?.initialStats?.questionsAnswerTrue || 0) + 1
+      viewerStore.viewer.stats.questionsAnswerTrue = (viewerStore.viewer?.stats.questionsAnswerTrue || 0) + 1
     }
-    panX.value = 0
+  }
+
+  const onSwipe = () => {
+    if (currentQuestion.value.isAnswerCorrect == null || questionsIsOver.value) return
+    currentQuestionIndex.value = currentQuestionIndex.value + 1
   }
 
   //hooks
+  watch(questionsIsOver, async () => {
+    if (questionsIsOver.value) {
+      await questionsStore.updateQuestions()
+      await viewerStore.updateUserStats()
+    }
+  })
+
   onMounted(() => {
-    currentQuestionId.value = 0
+    if (!viewerStore.isAlreadyVisitToday) questionsStore.init()
   })
 </script>
 <template>
   <AppPageLayout>
     <template #content>
       <div :class="$style.container">
-        <div
-          :class="[$style.wrapper, 'flex items-center justify-center']"
-          :style="{ transform: `translate(${panX}px, ${panY}px)` }"
-        >
-          <div class="text-h6">{{ testStore.currentTask?.name }}</div>
+        <div v-touch-swipe.left="onSwipe" :class="[$style.wrapper, 'flex items-center justify-center']">
+          <div :class="$style.testTitle">DevOps Test</div>
 
           <div
-            v-touch-pan.stop="onPan"
-            @touchend="onTouchEnd"
+            v-if="!questionsStore.isLoading && currentQuestion"
             :class="[$style.question, 'full-width flex column items-center justify-center']"
-            v-if="!!currentQuestion"
           >
-            <div :class="[$style.title, 'text-bold']">{{ currentQuestion.text }}</div>
+            <div :class="[$style.label, 'text-bold']">{{ currentQuestion?.question }}</div>
             <div>
               <div
                 :class="[
                   'q-mt-sm',
-                  !currentViewerQuestion || (currentViewerQuestion?.chooseOptionId !== option.id && !option.isRight)
-                    ? $style.option
-                    : optionById[currentViewerQuestion?.chooseOptionId]?.isRight ||
-                      (!optionById[currentViewerQuestion?.chooseOptionId]?.isRight && option.isRight)
-                    ? $style.optionCorrect
-                    : $style.optionUnCorrect,
+                  $style.option,
+                  {
+                    [$style.optionCorrect]:
+                      index == currentQuestion?.correctAnswerIndex && isBoolean(currentQuestion?.isAnswerCorrect),
+                    [$style.optionUnCorrect]: currentQuestion?.isAnswerCorrect == false && index == answerIndex,
+                  },
                 ]"
-                v-for="(option, index) in currentQuestion.options"
-                :key="option.id"
-                @click="chooseOption(option.id)"
+                v-for="(text, index) in currentQuestion?.answers"
+                :key="index"
+                @click="chooseOption(index)"
               >
-                {{ index + 1 }}. {{ option.text }}
+                {{ index + 1 }}. {{ text }}
               </div>
             </div>
             <div :class="$style.count">
-              Вопрос {{ currentQuestionId + 1 }} из {{ currentQuestion.options.length + 1 }}
+              Вопрос {{ currentQuestionIndex + 1 }} из {{ questionsStore.questions.length }}
             </div>
+          </div>
+
+          <QSpinner v-if="questionsStore.isLoading" style="position: absolute; top: 50%; left: 42%" />
+
+          <div v-if="viewerStore.isAlreadyVisitToday" :class="[$style.warning, 'text-bold']">
+            Дневной лимит исчерпан. Приходи завтра.
           </div>
 
           <div :class="[$style.statistics, 'flex column justify-center items-center']">
             <div :class="$style.title">Статистика</div>
             <div class="q-mt-md">
-              <div>Правильных ответов всего: 90%</div>
-              <div>Решено: 20 вопросов</div>
+              <QTable
+                :class="$style.table"
+                flat
+                bordered
+                :rows="viewerStore.rows"
+                :columns="viewerStore.columns || []"
+                hide-bottom
+                wrap-cells
+                row-key="name"
+                separator="cell"
+              />
             </div>
           </div>
 
-          <div :class="[$style.info, 'text-bold q-mt-md']">На этот вопрос верно ответило: 23%</div>
+          <div
+            v-if="isBoolean(currentQuestion?.isAnswerCorrect) && !questionsStore.isLoading"
+            :class="[$style.info, 'text-bold']"
+          >
+            На этот вопрос верно ответило: {{ percentAnswerCorrect }}%
+          </div>
         </div>
       </div>
     </template>
@@ -114,65 +134,90 @@
 
 <style module lang="scss">
   .container {
-    font-size: 17px;
+    font-size: 15px;
     padding: 15px;
 
     .wrapper {
       padding: 15px;
+      gap: 15px;
       border: 1px solid black;
       border-radius: 20px;
-    }
 
-    .question {
-      padding: 15px 0px;
-
-      .title {
-        padding: 5px;
-        margin-bottom: 7px;
-        border: 1px solid #009500;
-        background: #0095002e;
+      .testTitle {
+        font-size: 1.25rem;
+        font-weight: 700;
+        line-height: 1rem;
+        letter-spacing: 0.0125em;
       }
 
-      .option {
-        &Correct {
-          margin-top: 6px !important;
-          border: 1px solid #2d7600;
-          color: white;
-          background: rgb(96 169 23);
+      .warning {
+        padding: 5px;
+        border: 1px solid #e2b035;
+        text-align: center;
+        background: linear-gradient(0deg, rgba(255, 179, 40, 1) 20%, rgba(255, 255, 255, 1) 100%);
+      }
+
+      .question {
+        .label {
+          padding: 5px;
+          margin-bottom: 7px;
+          border: 1px solid #009500;
+          background: rgba(0, 149, 0, 0.1803921569);
+          border-radius: 5px;
+          text-align: center;
         }
 
-        &UnCorrect {
-          margin-top: 6px !important;
-          border: 1px solid #b20000;
-          background: #e51400;
-          color: white;
+        .option {
+          padding: 0 5px;
+
+          &Correct {
+            margin-top: 6px !important;
+            border: 1px solid #2d7600;
+            color: white;
+            background: rgb(96 169 23);
+          }
+
+          &UnCorrect {
+            margin-top: 6px !important;
+            border: 1px solid #b20000;
+            background: #e51400;
+            color: white;
+          }
+        }
+
+        .count {
+          padding: 5px;
+          border: 1px solid #8ba7d0;
+          background: #dae8fc;
+          margin-left: auto;
+          margin-top: 15px;
         }
       }
 
-      .count {
-        padding: 5px;
-        border: 1px solid #8ba7d0;
-        background: #dae8fc;
-        margin-left: auto;
-        margin-top: 15px;
+      .statistics {
+        .title {
+          padding: 3px 15px;
+          border: 1px solid #006eaf;
+          color: white;
+          background: #1ba1e2;
+        }
+
+        .table {
+          table,
+          th,
+          td {
+            border: 1px dashed black !important;
+            border-color: black !important;
+            border-collapse: collapse !important;
+          }
+        }
       }
-    }
 
-    .statistics {
-      margin-top: 40px;
-
-      .title {
+      .info {
         padding: 3px 15px;
-        border: 1px solid #006eaf;
-        color: white;
-        background: #1ba1e2;
+        border: 1px solid #bba000;
+        background: #e3c800;
       }
-    }
-
-    .info {
-      padding: 3px 15px;
-      border: 1px solid #bba000;
-      background: #e3c800;
     }
   }
 </style>

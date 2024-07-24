@@ -1,26 +1,18 @@
 <script setup lang="ts">
   import { QLayout } from 'quasar'
-  import { computed, watch } from 'vue'
+  import { computed } from 'vue'
 
   import { mainInited } from './iframe-init/main'
-
-  const $body = document.querySelector('body')
 
   // computed
   const isLoaded = computed<boolean>(() => {
     return mainInited.value
   })
-
-  // hooks
-  watch(mainInited, (value) => {
-    if (!value) return
-    if ($body) $body.classList.add('loaded')
-  })
 </script>
 
 <template>
   <QLayout view="lHh Lpr lFf">
-    <router-view />
+    <router-view v-if="isLoaded" />
   </QLayout>
 </template>
 

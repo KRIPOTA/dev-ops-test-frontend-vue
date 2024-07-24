@@ -1,3 +1,5 @@
+import { UserDto, UserStatsDto } from '/@src/shared/api/dev-ops-test-api/users/dto/user.dto'
+
 export interface TgUserDto {
   id: number
   is_bot?: boolean
@@ -10,26 +12,8 @@ export interface TgUserDto {
   allows_write_to_pm?: boolean
   photo_url?: string
 }
-
-export interface StatQuestionDto {
-  id: number
-  chooseOptionId: number
-}
-
-export interface StatDto {
-  taskId: number
-  questions: StatQuestionDto[]
-}
-
-export interface ViewerDto {
-  id: number
-  externalId: number
-  externalUserName: string
-  firstName: string
-  lastName: string
-  stats: StatDto[]
-}
-
 export interface ViewerState {
-  viewer: ViewerDto | null
+  viewer: UserDto | null
+  isInited: boolean
+  initialStats: Partial<UserStatsDto>
 }
