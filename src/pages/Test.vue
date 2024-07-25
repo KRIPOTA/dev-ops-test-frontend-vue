@@ -83,6 +83,8 @@
                     [$style.optionCorrect]:
                       index == currentQuestion?.correctAnswerIndex && isBoolean(currentQuestion?.isAnswerCorrect),
                     [$style.optionUnCorrect]: currentQuestion?.isAnswerCorrect == false && index == answerIndex,
+                    [$style.optionBlink]:
+                      currentQuestion?.isAnswerCorrect == false && index == currentQuestion?.correctAnswerIndex,
                   },
                 ]"
                 v-for="(text, index) in currentQuestion?.answers"
@@ -182,6 +184,16 @@
             border: 1px solid #b20000;
             background: #e51400;
             color: white;
+          }
+
+          &Blink {
+            animation: blink 2s infinite;
+          }
+
+          @keyframes blink {
+            70% {
+              opacity: 70%;
+            }
           }
         }
 

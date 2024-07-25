@@ -1,8 +1,8 @@
 {
-  "name": "test-tg-web-app",
+  "name": "dev-ops-test",
   "version": "0.0.1",
-  "description": "Тестовое приложение для ТГ",
-  "productName": "WEB_APP",
+  "description": "DevOps Test",
+  "productName": "DevOps Test",
   "author": "",
   "private": true,
   "scripts": {
