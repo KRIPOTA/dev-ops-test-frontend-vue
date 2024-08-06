@@ -11,7 +11,7 @@
 
     if (!tgWebApp) return
 
-    const tgUser = tgWebApp?.initDataUnsafe?.use || (null as TgUserDto | null)
+    const tgUser = tgWebApp?.initDataUnsafe?.user || (null as TgUserDto | null)
 
     await viewerStore.init(tgUser)
   })
