@@ -16,25 +16,13 @@
   </QLayout>
 </template>
 
-<style lang="scss">
+<style module lang="scss">
   body:not(.loaded) {
-    background-color: rgba(255, 255, 255, 0.6);
+    background-color: #1c1f24;
   }
 
   svg:focus {
     border: none;
     outline: none;
-  }
-</style>
-
-<style module lang="scss">
-  .background {
-    position: fixed;
-    width: 100%;
-    height: 100%;
-    top: 0;
-    left: 0;
-    background: transparent !important;
-    cursor: pointer;
   }
 </style>

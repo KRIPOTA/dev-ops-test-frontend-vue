@@ -67,14 +67,12 @@
     <template #content>
       <div :class="$style.container">
         <div v-touch-swipe.left="onSwipe" :class="[$style.wrapper, 'flex items-center justify-center']">
-          <div :class="$style.testTitle">DevOps Test</div>
-
           <div
             v-if="!questionsStore.isLoading && currentQuestion"
             :class="[$style.question, 'full-width flex column items-center justify-center']"
           >
             <div :class="[$style.label, 'text-bold']">{{ currentQuestion?.question }}</div>
-            <div>
+            <div class="full-width flex column">
               <div
                 :class="[
                   'q-mt-sm',
@@ -89,9 +87,10 @@
                 ]"
                 v-for="(text, index) in currentQuestion?.answers"
                 :key="index"
+                color="primary"
                 @click="chooseOption(index)"
               >
-                {{ index + 1 }}. {{ text }}
+                {{ text }}
               </div>
             </div>
             <div :class="$style.count">
@@ -106,8 +105,7 @@
           </div>
 
           <div :class="[$style.statistics, 'flex column justify-center items-center']">
-            <div :class="$style.title">Статистика</div>
-            <div class="q-mt-md">
+            <div class="q-mt-lg">
               <QTable
                 :class="$style.table"
                 flat
@@ -118,15 +116,16 @@
                 wrap-cells
                 row-key="name"
                 separator="cell"
+                title="Статистика"
               />
             </div>
-          </div>
 
-          <div
-            v-if="isBoolean(currentQuestion?.isAnswerCorrect) && !questionsStore.isLoading"
-            :class="[$style.info, 'text-bold']"
-          >
-            На этот вопрос верно ответило: {{ percentAnswerCorrect }}%
+            <div
+              v-if="isBoolean(currentQuestion?.isAnswerCorrect) && !questionsStore.isLoading"
+              :class="[$style.info, 'text-bold q-mt-lg']"
+            >
+              На этот вопрос верно ответило: {{ percentAnswerCorrect }}%
+            </div>
           </div>
         </div>
       </div>
@@ -140,11 +139,6 @@
     padding: 15px;
 
     .wrapper {
-      padding: 15px;
-      gap: 15px;
-      border: 1px solid black;
-      border-radius: 20px;
-
       .testTitle {
         font-size: 1.25rem;
         font-weight: 700;
@@ -161,29 +155,30 @@
 
       .question {
         .label {
-          padding: 5px;
+          font-size: 20px;
+          font-weight: 200;
+          padding: 0 35px;
+          line-height: 25px;
           margin-bottom: 7px;
-          border: 1px solid #009500;
-          background: rgba(0, 149, 0, 0.1803921569);
-          border-radius: 5px;
+          color: white;
           text-align: center;
         }
 
         .option {
-          padding: 0 5px;
+          border-radius: 10px;
+          padding: 5px 25px;
+          background: #585dff;
+          width: 100%;
+          font-size: 20px;
+          text-align: center;
+          color: #ffffff;
 
           &Correct {
-            margin-top: 6px !important;
-            border: 1px solid #2d7600;
-            color: white;
             background: rgb(96 169 23);
           }
 
           &UnCorrect {
-            margin-top: 6px !important;
-            border: 1px solid #b20000;
             background: #e51400;
-            color: white;
           }
 
           &Blink {
@@ -199,10 +194,11 @@
 
         .count {
           padding: 5px;
-          border: 1px solid #8ba7d0;
-          background: #dae8fc;
+          color: white;
+          font-size: 16px;
+          font-weight: 800;
           margin-left: auto;
-          margin-top: 15px;
+          margin-top: 10px;
         }
       }
 
@@ -215,20 +211,30 @@
         }
 
         .table {
-          table,
-          th,
-          td {
-            border: 1px dashed black !important;
-            border-color: black !important;
-            border-collapse: collapse !important;
+          :global(.q-table__top) {
+            justify-content: center;
+            border-bottom: 1px solid #d4d4d4;
           }
+
+          table,
+          td,
+          th {
+            font-size: 14px;
+          }
+
+          // table {
+          //   border-color: #f4f4f4 !important;
+          //   color: #f4f4f4;
+          //   background: #1d1d1d;
+          // }
         }
       }
 
       .info {
-        padding: 3px 15px;
-        border: 1px solid #bba000;
-        background: #e3c800;
+        padding: 5px 20px;
+        font-size: 17px;
+        border-radius: 5px;
+        background: #ffe83f;
       }
     }
   }
