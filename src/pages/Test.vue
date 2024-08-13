@@ -147,10 +147,11 @@
       }
 
       .warning {
-        padding: 5px;
-        border: 1px solid #e2b035;
         text-align: center;
-        background: linear-gradient(0deg, rgba(255, 179, 40, 1) 20%, rgba(255, 255, 255, 1) 100%);
+        padding: 5px 20px;
+        font-size: 16px;
+        border-radius: 5px;
+        background: rgb(255, 179, 40);
       }
 
       .question {
@@ -221,12 +222,6 @@
           th {
             font-size: 14px;
           }
-
-          // table {
-          //   border-color: #f4f4f4 !important;
-          //   color: #f4f4f4;
-          //   background: #1d1d1d;
-          // }
         }
       }
 
