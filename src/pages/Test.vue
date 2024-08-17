@@ -1,5 +1,6 @@
 <script setup lang="ts">
   import { isBoolean } from 'lodash'
+  import { Notify } from 'quasar'
   import { computed, onMounted, ref, watch } from 'vue'
 
   import AppPageLayout from '../app/layouts/AppPageLayout.vue'
@@ -10,15 +11,22 @@
   const viewerStore = useViewerStore()
 
   //refs
-  const currentQuestionIndex = ref(0)
+  const question = ref<HTMLDivElement | null>(null)
+  const currentIndex = ref(0)
   const answerIndex = ref(0)
+  const translateX = ref(0)
+  const nextTranslateX = ref(window.innerWidth)
+  const startX = ref(0)
+  const endX = ref(0)
+  const hideCurrent = ref(false)
+  const hideNext = ref(false)
 
   //computed
-  const currentQuestion = computed(() => questionsStore?.questions[currentQuestionIndex.value])
+  const currentQuestion = computed(() => questionsStore?.questions[currentIndex.value])
+  const nextQuestion = computed(() => questionsStore?.questions[currentIndex.value + 1])
+  const height = computed(() => question.value?.clientHeight || 0)
 
-  const questionsIsOver = computed(
-    () => currentQuestionIndex.value == 9 && isBoolean(currentQuestion.value.isAnswerCorrect)
-  )
+  const questionsIsOver = computed(() => currentIndex.value == 9 && isBoolean(currentQuestion.value.isAnswerCorrect))
 
   const percentAnswerCorrect = computed(() => {
     const percent = ((currentQuestion.value.countTrueAnswer || 0) / (currentQuestion.value.countPublish || 0)) * 100
@@ -45,9 +53,74 @@
     }
   }
 
-  const onSwipe = () => {
-    if (currentQuestion.value.isAnswerCorrect == null || questionsIsOver.value) return
-    currentQuestionIndex.value = currentQuestionIndex.value + 1
+  // const onSwipe = () => {
+  //   if (currentQuestion.value.isAnswerCorrect == null) {
+  //     Notify.create({
+  //       message: 'Для того, чтобы перейти к следующему вопросу, нужно ответить на этот',
+  //       type: 'warning',
+  //     })
+  //     return
+  //   }
+
+  //   if (questionsIsOver.value) return
+  //   currentQuestionIndex.value = currentQuestionIndex.value + 1
+  // }
+
+  const touchStart = (e) => {
+    if (currentQuestion.value.isAnswerCorrect == null) {
+      Notify.create({
+        message: 'Для того, чтобы перейти к следующему вопросу, нужно ответить на этот',
+        type: 'warning',
+      })
+      return
+    }
+    if (currentIndex.value < questionsStore?.questions.length - 1) {
+      startX.value = e.touches[0].clientX
+    }
+  }
+
+  const touchMove = (e) => {
+    if (currentQuestion.value.isAnswerCorrect == null) {
+      return
+    }
+    if (currentIndex.value < questionsStore?.questions.length - 1) {
+      endX.value = e.touches[0].clientX
+      translateX.value = endX.value - startX.value
+      nextTranslateX.value = window.innerWidth - Math.abs(translateX.value)
+      if (nextTranslateX.value < 0) {
+        nextTranslateX.value = 0
+      }
+    }
+  }
+  const touchEnd = () => {
+    if (currentQuestion.value.isAnswerCorrect == null) {
+      return
+    }
+    if (
+      currentIndex.value < questionsStore?.questions.length - 1 &&
+      translateX.value < 0 &&
+      Math.abs(translateX.value) > 50
+    ) {
+      swipeNext()
+    } else {
+      translateX.value = 0
+      nextTranslateX.value = window.innerWidth
+    }
+  }
+  const swipeNext = () => {
+    hideCurrent.value = true
+    translateX.value = -window.innerWidth
+    nextTranslateX.value = 0
+    setTimeout(() => {
+      currentIndex.value++
+      translateX.value = 0
+      hideNext.value = true
+      nextTranslateX.value = window.innerWidth
+      setTimeout(() => {
+        hideNext.value = false
+      }, 500)
+      hideCurrent.value = false
+    }, 300)
   }
 
   //hooks
@@ -66,37 +139,74 @@
   <AppPageLayout>
     <template #content>
       <div :class="$style.container">
-        <div v-touch-swipe.left="onSwipe" :class="[$style.wrapper, 'flex items-center justify-center']">
-          <div
-            v-if="!questionsStore.isLoading && currentQuestion"
-            :class="[$style.question, 'full-width flex column items-center justify-center']"
-          >
-            <div :class="[$style.label, 'text-bold']">{{ currentQuestion?.question }}</div>
-            <div class="full-width flex column">
-              <div
-                :class="[
-                  'q-mt-sm',
-                  $style.option,
-                  {
-                    [$style.optionCorrect]:
-                      index == currentQuestion?.correctAnswerIndex && isBoolean(currentQuestion?.isAnswerCorrect),
-                    [$style.optionUnCorrect]: currentQuestion?.isAnswerCorrect == false && index == answerIndex,
-                    [$style.optionBlink]:
-                      currentQuestion?.isAnswerCorrect == false && index == currentQuestion?.correctAnswerIndex,
-                  },
-                ]"
-                v-for="(text, index) in currentQuestion?.answers"
-                :key="index"
-                color="primary"
-                @click="chooseOption(index)"
-              >
-                {{ text }}
+        <div :class="[$style.wrapper, 'flex items-center justify-center']">
+          <div :class="$style.questionContainer" :style="{ height: height + 'px' }">
+            <div
+              v-if="!questionsStore.isLoading && currentQuestion && !hideCurrent"
+              @touchstart="touchStart"
+              @touchmove="touchMove"
+              @touchend="touchEnd"
+              :class="$style.questionCard"
+              :style="{ transform: `translateX(${translateX}px)` }"
+            >
+              <div ref="question" :class="[$style.question, 'full-width flex column items-center justify-center']">
+                <div :class="[$style.label, 'text-bold']">{{ currentQuestion?.question }}</div>
+                <div class="full-width flex column">
+                  <div
+                    :class="[
+                      'q-mt-sm',
+                      $style.option,
+                      {
+                        [$style.optionCorrect]:
+                          index == currentQuestion?.correctAnswerIndex && isBoolean(currentQuestion?.isAnswerCorrect),
+                        [$style.optionUnCorrect]: currentQuestion?.isAnswerCorrect == false && index == answerIndex,
+                        [$style.optionBlink]:
+                          currentQuestion?.isAnswerCorrect == false && index == currentQuestion?.correctAnswerIndex,
+                      },
+                    ]"
+                    v-for="(text, index) in currentQuestion?.answers"
+                    :key="index"
+                    color="primary"
+                    @click="chooseOption(index)"
+                  >
+                    {{ text }}
+                  </div>
+                </div>
               </div>
             </div>
-            <div :class="$style.count">
-              Вопрос {{ currentQuestionIndex + 1 }} из {{ questionsStore.questions.length }}
+
+            <div
+              v-if="currentIndex < questionsStore.questions.length - 1 && !hideNext"
+              :class="$style.questionCardNext"
+              :style="{ transform: `translateX(${nextTranslateX}px)` }"
+            >
+              <div :class="[$style.question, 'full-width flex column items-center justify-center']">
+                <div :class="[$style.label, 'text-bold']">{{ nextQuestion?.question }}</div>
+                <div class="full-width flex column">
+                  <div
+                    :class="[
+                      'q-mt-sm',
+                      $style.option,
+                      {
+                        [$style.optionCorrect]:
+                          index == nextQuestion?.correctAnswerIndex && isBoolean(nextQuestion?.isAnswerCorrect),
+                        [$style.optionUnCorrect]: nextQuestion?.isAnswerCorrect == false && index == answerIndex,
+                        [$style.optionBlink]:
+                          nextQuestion?.isAnswerCorrect == false && index == nextQuestion?.correctAnswerIndex,
+                      },
+                    ]"
+                    v-for="(text, index) in nextQuestion?.answers"
+                    :key="index"
+                    color="primary"
+                    @click="chooseOption(index)"
+                  >
+                    {{ text }}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
+          <div :class="$style.count">Вопрос {{ currentIndex + 1 }} из {{ questionsStore.questions.length }}</div>
 
           <QSpinner v-if="questionsStore.isLoading" style="position: absolute; top: 50%; left: 42%" />
 
@@ -134,6 +244,70 @@
 </template>
 
 <style module lang="scss">
+  .questionContainer {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+
+    .questionCard {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.3s ease;
+
+      &Next {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100%;
+        height: 100%;
+        transition: transform 0.3s ease;
+      }
+    }
+  }
+
+  .question {
+    .label {
+      font-size: 20px;
+      font-weight: 200;
+      padding: 0 35px;
+      line-height: 25px;
+      margin-bottom: 7px;
+      color: white;
+      text-align: center;
+    }
+
+    .option {
+      border-radius: 10px;
+      padding: 5px 25px;
+      background: #585dff;
+      width: 100%;
+      font-size: 20px;
+      text-align: center;
+      color: #ffffff;
+
+      &Correct {
+        background: rgb(96 169 23);
+      }
+
+      &UnCorrect {
+        background: #e51400;
+      }
+
+      &Blink {
+        animation: blink 2s infinite;
+      }
+
+      @keyframes blink {
+        70% {
+          opacity: 70%;
+        }
+      }
+    }
+  }
+
   .container {
     font-size: 15px;
     padding: 15px;
@@ -154,53 +328,13 @@
         background: rgb(255, 179, 40);
       }
 
-      .question {
-        .label {
-          font-size: 20px;
-          font-weight: 200;
-          padding: 0 35px;
-          line-height: 25px;
-          margin-bottom: 7px;
-          color: white;
-          text-align: center;
-        }
-
-        .option {
-          border-radius: 10px;
-          padding: 5px 25px;
-          background: #585dff;
-          width: 100%;
-          font-size: 20px;
-          text-align: center;
-          color: #ffffff;
-
-          &Correct {
-            background: rgb(96 169 23);
-          }
-
-          &UnCorrect {
-            background: #e51400;
-          }
-
-          &Blink {
-            animation: blink 2s infinite;
-          }
-
-          @keyframes blink {
-            70% {
-              opacity: 70%;
-            }
-          }
-        }
-
-        .count {
-          padding: 5px;
-          color: white;
-          font-size: 16px;
-          font-weight: 800;
-          margin-left: auto;
-          margin-top: 10px;
-        }
+      .count {
+        padding: 5px;
+        color: white;
+        font-size: 16px;
+        font-weight: 800;
+        margin-left: auto;
+        margin-top: 10px;
       }
 
       .statistics {
