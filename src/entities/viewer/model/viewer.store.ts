@@ -66,6 +66,8 @@ export const useViewerStore = defineStore({
         all: Math.ceil(percentCorrectAnswerAll || 0),
       }
     },
+
+    loginFirst: (state): boolean => state.initialStats.loginLast == null,
   },
 
   actions: {

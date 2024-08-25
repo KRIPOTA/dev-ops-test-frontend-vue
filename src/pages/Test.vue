@@ -1,11 +1,13 @@
 <script setup lang="ts">
   import { isBoolean } from 'lodash'
+  import { Notify } from 'quasar'
   import { computed, onMounted, ref, watch } from 'vue'
 
   import AppPageLayout from '../app/layouts/AppPageLayout.vue'
   import { useQuestionsStore } from '../entities/questions/model/questions.store'
-  import { useViewerStore } from '../entities/viewer'
+  import { TgUserDto, useViewerStore } from '../entities/viewer'
 
+  const OVER_QUESTION_INDEX = 19
   const questionsStore = useQuestionsStore()
   const viewerStore = useViewerStore()
 
@@ -17,7 +19,7 @@
   const currentQuestion = computed(() => questionsStore?.questions[currentQuestionIndex.value])
 
   const questionsIsOver = computed(
-    () => currentQuestionIndex.value == 9 && isBoolean(currentQuestion.value.isAnswerCorrect)
+    () => currentQuestionIndex.value == OVER_QUESTION_INDEX && isBoolean(currentQuestion.value.isAnswerCorrect)
   )
 
   const percentAnswerCorrect = computed(() => {
@@ -43,6 +45,14 @@
       viewerStore.initialStats.questionsAnswerTrue = (viewerStore?.initialStats?.questionsAnswerTrue || 0) + 1
       viewerStore.viewer.stats.questionsAnswerTrue = (viewerStore.viewer?.stats.questionsAnswerTrue || 0) + 1
     }
+
+    if (viewerStore.loginFirst && currentQuestionIndex.value == 0 && isBoolean(currentQuestion.value.isAnswerCorrect)) {
+      Notify.create({
+        type: 'warning',
+        message: 'Для перехода к следующему вопросу сделай свайп вправо',
+        position: 'top',
+      })
+    }
   }
 
   const onSwipe = () => {
@@ -58,14 +68,19 @@
     }
   })
 
-  onMounted(() => {
+  onMounted(async () => {
+    const tgWebApp = window['Telegram'].WebApp || null
+    if (!tgWebApp) return
+    const tgUser = tgWebApp?.initDataUnsafe?.user || (null as TgUserDto | null)
+    await viewerStore.init(tgUser)
+
     if (!viewerStore.isAlreadyVisitToday) questionsStore.init()
   })
 </script>
 <template>
   <AppPageLayout>
     <template #content>
-      <div :class="$style.container">
+      <div v-if="viewerStore.isInited" :class="$style.container">
         <div v-touch-swipe.left="onSwipe" :class="[$style.wrapper, 'flex items-center justify-center']">
           <div
             v-if="!questionsStore.isLoading && currentQuestion"
@@ -129,6 +144,7 @@
           </div>
         </div>
       </div>
+      <QSpinner v-else color="primary" size="3em" style="position: absolute; top: 50%; left: 42%" />
     </template>
   </AppPageLayout>
 </template>
