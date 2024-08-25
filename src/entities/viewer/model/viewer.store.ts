@@ -67,7 +67,7 @@ export const useViewerStore = defineStore({
       }
     },
 
-    loginFirst: (state): boolean => state.initialStats.loginLast == null,
+    loginFirst: (state): boolean => state.viewer?.stats.loginLast == null,
   },
 
   actions: {
