@@ -56,8 +56,6 @@ import quasarUserOptions from './quasar-user-options.js'
 
 
 
-console.info('[Quasar] Running SPA.')
-
 
 const publicPath = `/`
 
@@ -164,13 +162,13 @@ createQuasarApp(createApp, quasarUserOptions)
 
     return Promise[ method ]([
       
-      import('boot/../app/boot/i18n'),
+      import('boot//i18n'),
       
-      import('boot/../app/boot/quasar-lang-pack'),
+      import('boot//quasar-lang-pack'),
       
-      import('boot/../app/boot/addressbar-color'),
+      import('boot//addressbar-color'),
       
-      import('boot/../app/boot/navigation-guard')
+      import('boot//navigation-guard')
       
     ]).then(bootFiles => {
       const boot = mapFn(bootFiles).filter(entry => typeof entry === 'function')

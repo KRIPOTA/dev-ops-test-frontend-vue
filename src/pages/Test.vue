@@ -3,9 +3,9 @@
   import { Notify } from 'quasar'
   import { computed, onMounted, ref, watch } from 'vue'
 
-  import AppPageLayout from '../app/layouts/AppPageLayout.vue'
   import { useQuestionsStore } from '../entities/questions/model/questions.store'
   import { TgUserDto, useViewerStore } from '../entities/viewer'
+  import AppPageLayout from '../layouts/AppPageLayout.vue'
 
   const OVER_QUESTION_INDEX = 19
   const questionsStore = useQuestionsStore()

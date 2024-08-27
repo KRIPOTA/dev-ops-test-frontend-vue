@@ -13,7 +13,7 @@ const path = require('path')
 
 require('dotenv').config()
 
-const BOOT_PATH = '../app/boot/'
+const BOOT_PATH = ''
 
 function prefixPaths(paths, prefix) {
   return paths.map((p) => {
@@ -188,9 +188,9 @@ module.exports = configure(function (ctx) {
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#sourcefiles
     sourceFiles: {
-      rootComponent: 'src/app/App.vue',
-      router: 'src/app/router/index',
-      store: 'src/app/pinia/index',
+      rootComponent: 'src//App.vue',
+      router: 'src/router/index',
+      store: 'src/pinia/index',
       registerServiceWorker: 'src-pwa/register-service-worker',
       serviceWorker: 'src-pwa/custom-service-worker',
       pwaManifestFile: 'src-pwa/manifest.json',

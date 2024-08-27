@@ -9,7 +9,7 @@ const notFound: RouteRecordRaw = {
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
-    component: () => import('src/app/App.vue'),
+    component: () => import('src/App.vue'),
     alias: ['/'],
     children: [
       {
