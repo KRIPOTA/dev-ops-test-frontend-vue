@@ -47,8 +47,10 @@ export const useViewerStore = defineStore({
       const loginLastDate = state.viewer?.stats.loginLast
 
       if (loginLastDate) {
-        const hoursDiff = dayjs().diff(dayjs(loginLastDate), 'hours')
-        return hoursDiff < 24
+        const $loginLastDate = dayjs(loginLastDate)
+        const $currentDate = dayjs()
+        const daysDiff = $currentDate.isSame($loginLastDate, 'days')
+        return daysDiff
       }
 
       return false
