@@ -14,6 +14,12 @@
   //refs
   const currentQuestionIndex = ref(0)
   const answerIndex = ref(0)
+  const translateX = ref(0)
+  const nextTranslateX = ref(window.innerWidth)
+  const startX = ref(0)
+  const endX = ref(0)
+  const hideCurrent = ref(false)
+  const hideNext = ref(false)
 
   //computed
   const currentQuestion = computed(() => questionsStore?.questions[currentQuestionIndex.value])
@@ -58,6 +64,49 @@
   const onSwipe = () => {
     if (currentQuestion.value.isAnswerCorrect == null || questionsIsOver.value) return
     currentQuestionIndex.value = currentQuestionIndex.value + 1
+  }
+
+  const touchMove = (e) => {
+    // if (currentQuestion.value.isAnswerCorrect == null) {
+    //   return
+    // }
+    // if (currentIndex.value < questionsStore?.questions.length - 1) {
+    //   endX.value = e.touches[0].clientX
+    //   translateX.value = endX.value - startX.value
+    //   nextTranslateX.value = window.innerWidth - Math.abs(translateX.value)
+    //   if (nextTranslateX.value < 0) {
+    //     nextTranslateX.value = 0
+    //   }
+    // }
+  }
+  const touchEnd = () => {
+    // if (currentQuestion.value.isAnswerCorrect == null) {
+    //   return
+    // }
+    // if (
+    //   currentIndex.value < questionsStore?.questions.length - 1 &&
+    //   translateX.value < 0 &&
+    //   Math.abs(translateX.value) > 50
+    // ) {
+    //   swipeNext()
+    // } else {
+    //   translateX.value = 0
+    //   nextTranslateX.value = window.innerWidth
+    // }
+  }
+  const swipeNext = () => {
+    // hideCurrent.value = true
+    // translateX.value = -window.innerWidth
+    // nextTranslateX.value = 0
+    // setTimeout(() => {
+    //   translateX.value = 0
+    //   hideNext.value = true
+    //   nextTranslateX.value = window.innerWidth
+    //   setTimeout(() => {
+    //     hideNext.value = false
+    //   }, 500)
+    //   hideCurrent.value = false
+    // }, 300)
   }
 
   //hooks
@@ -114,7 +163,13 @@
           </div>
 
           <QSpinner v-if="questionsStore.isLoading" style="position: absolute; top: 50%; left: 42%" />
-
+          <QBtn
+            style="box-shadow: 0px 0px 0px 0px rgb(88 93 255)"
+            round
+            color="white"
+            icon="arrow_forward"
+            text-color="primary"
+          />
           <div v-if="viewerStore.isAlreadyVisitToday" :class="[$style.warning, 'text-bold']">
             Дневной лимит исчерпан. Приходи завтра.
           </div>
