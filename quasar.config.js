@@ -154,6 +154,9 @@ module.exports = configure(function (ctx) {
           ],
           timeout: 2000,
         },
+        brand: {
+          primary: '#585dff'
+        }
       },
 
       iconSet: 'eva-icons', // Quasar icon set

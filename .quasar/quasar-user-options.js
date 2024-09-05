@@ -21,5 +21,5 @@ import {AddressbarColor,BottomSheet,Cookies,Dialog,Loading,LocalStorage,SessionS
 
 
 
-export default { config: {"dark":false,"notify":{"actions":[{"icon":"close","color":"white","round":true}],"timeout":2000}},lang,iconSet,plugins: {AddressbarColor,BottomSheet,Cookies,Dialog,Loading,LocalStorage,SessionStorage,Meta,Notify} }
+export default { config: {"dark":false,"notify":{"actions":[{"icon":"close","color":"white","round":true}],"timeout":2000},"brand":{"primary":"#585dff"}},lang,iconSet,plugins: {AddressbarColor,BottomSheet,Cookies,Dialog,Loading,LocalStorage,SessionStorage,Meta,Notify} }
 

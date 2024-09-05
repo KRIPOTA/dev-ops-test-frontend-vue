@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { isBoolean } from 'lodash'
-  import { Notify } from 'quasar'
+  import { Notify, setCssVar } from 'quasar'
   import { computed, onMounted, ref, watch } from 'vue'
 
   import { useQuestionsStore } from '../entities/questions/model/questions.store'
@@ -12,20 +12,23 @@
   const viewerStore = useViewerStore()
 
   //refs
-  const currentQuestionIndex = ref(0)
+  const currentIndex = ref(0)
   const answerIndex = ref(0)
   const translateX = ref(0)
-  const nextTranslateX = ref(window.innerWidth)
   const startX = ref(0)
   const endX = ref(0)
+  const needClass = ref(false)
+  const isNotifyAlreadyShown = ref(false)
   const hideCurrent = ref(false)
   const hideNext = ref(false)
 
   //computed
-  const currentQuestion = computed(() => questionsStore?.questions[currentQuestionIndex.value])
+  const maxTranslateX = computed(() => -window.innerWidth / 3.5 || -130)
+
+  const currentQuestion = computed(() => questionsStore?.questions[currentIndex.value])
 
   const questionsIsOver = computed(
-    () => currentQuestionIndex.value == OVER_QUESTION_INDEX && isBoolean(currentQuestion.value.isAnswerCorrect)
+    () => currentIndex.value == OVER_QUESTION_INDEX && isBoolean(currentQuestion.value.isAnswerCorrect)
   )
 
   const percentAnswerCorrect = computed(() => {
@@ -52,7 +55,7 @@
       viewerStore.viewer.stats.questionsAnswerTrue = (viewerStore.viewer?.stats.questionsAnswerTrue || 0) + 1
     }
 
-    if (viewerStore.loginFirst && currentQuestionIndex.value == 0 && isBoolean(currentQuestion.value.isAnswerCorrect)) {
+    if (viewerStore.loginFirst && currentIndex.value == 0 && isBoolean(currentQuestion.value.isAnswerCorrect)) {
       Notify.create({
         type: 'warning',
         message: 'Для перехода к следующему вопросу сделай свайп вправо',
@@ -63,50 +66,56 @@
 
   const onSwipe = () => {
     if (currentQuestion.value.isAnswerCorrect == null || questionsIsOver.value) return
-    currentQuestionIndex.value = currentQuestionIndex.value + 1
+    currentIndex.value = currentIndex.value + 1
+  }
+
+  const touchStart = (e) => {
+    if (currentIndex.value < questionsStore?.questions.length - 1) {
+      startX.value = e.touches[0].clientX
+    }
   }
 
   const touchMove = (e) => {
-    // if (currentQuestion.value.isAnswerCorrect == null) {
-    //   return
-    // }
-    // if (currentIndex.value < questionsStore?.questions.length - 1) {
-    //   endX.value = e.touches[0].clientX
-    //   translateX.value = endX.value - startX.value
-    //   nextTranslateX.value = window.innerWidth - Math.abs(translateX.value)
-    //   if (nextTranslateX.value < 0) {
-    //     nextTranslateX.value = 0
-    //   }
-    // }
+    if (currentQuestion.value.isAnswerCorrect == null) {
+      if (!isNotifyAlreadyShown.value) {
+        Notify.create({
+          message: 'Для того, чтобы перейти к следующему вопросу, нужно ответить на этот',
+          type: 'warning',
+        })
+      }
+      isNotifyAlreadyShown.value = true
+      startX.value = 0
+      endX.value = 0
+      translateX.value = 0
+      return
+    }
+    if (currentIndex.value < questionsStore?.questions.length - 1) {
+      endX.value = e.touches[0].clientX
+      if ((endX.value - startX.value) / 2 < maxTranslateX.value) {
+        translateX.value = maxTranslateX.value
+      } else {
+        translateX.value = (endX.value - startX.value) / 2
+      }
+    }
   }
   const touchEnd = () => {
-    // if (currentQuestion.value.isAnswerCorrect == null) {
-    //   return
-    // }
-    // if (
-    //   currentIndex.value < questionsStore?.questions.length - 1 &&
-    //   translateX.value < 0 &&
-    //   Math.abs(translateX.value) > 50
-    // ) {
-    //   swipeNext()
-    // } else {
-    //   translateX.value = 0
-    //   nextTranslateX.value = window.innerWidth
-    // }
-  }
-  const swipeNext = () => {
-    // hideCurrent.value = true
-    // translateX.value = -window.innerWidth
-    // nextTranslateX.value = 0
-    // setTimeout(() => {
-    //   translateX.value = 0
-    //   hideNext.value = true
-    //   nextTranslateX.value = window.innerWidth
-    //   setTimeout(() => {
-    //     hideNext.value = false
-    //   }, 500)
-    //   hideCurrent.value = false
-    // }, 300)
+    if (currentQuestion.value.isAnswerCorrect == null) {
+      return
+    }
+    if (translateX.value > maxTranslateX.value) {
+      needClass.value = true
+      startX.value = 0
+      endX.value = 0
+      translateX.value = 0
+      setTimeout(() => {
+        needClass.value = false
+      }, 500)
+    } else {
+      currentIndex.value += 1
+      startX.value = 0
+      endX.value = 0
+      translateX.value = 0
+    }
   }
 
   //hooks
@@ -118,6 +127,7 @@
   })
 
   onMounted(async () => {
+    // setCssVar('my-color', '#f5f5f5')
     const tgWebApp = window['Telegram'].WebApp || null
     if (!tgWebApp) return
     const tgUser = tgWebApp?.initDataUnsafe?.user || (null as TgUserDto | null)
@@ -130,8 +140,11 @@
   <AppPageLayout>
     <template #content>
       <div v-if="viewerStore.isInited" :class="$style.container">
-        <div v-touch-swipe.left="onSwipe" :class="[$style.wrapper, 'flex items-center justify-center']">
+        <div :class="[$style.wrapper, 'flex items-center justify-center']">
           <div
+            @touchstart="touchStart"
+            @touchmove="touchMove"
+            @touchend="touchEnd"
             v-if="!questionsStore.isLoading && currentQuestion"
             :class="[$style.question, 'full-width flex column items-center justify-center']"
           >
@@ -151,24 +164,28 @@
                 ]"
                 v-for="(text, index) in currentQuestion?.answers"
                 :key="index"
-                color="primary"
                 @click="chooseOption(index)"
               >
                 {{ text }}
               </div>
             </div>
-            <div :class="$style.count">
-              Вопрос {{ currentQuestionIndex + 1 }} из {{ questionsStore.questions.length }}
-            </div>
+            <div :class="$style.count">Вопрос {{ currentIndex + 1 }} из {{ questionsStore.questions.length }}</div>
           </div>
 
           <QSpinner v-if="questionsStore.isLoading" style="position: absolute; top: 50%; left: 42%" />
           <QBtn
-            style="box-shadow: 0px 0px 0px 0px rgb(88 93 255)"
+            :class="{ [$style.buttonNext]: needClass }"
             round
-            color="white"
+            :color="Math.abs(translateX) >= Math.abs(maxTranslateX) ? 'primary' : 'white'"
             icon="arrow_forward"
-            text-color="primary"
+            :text-color="Math.abs(translateX) >= Math.abs(maxTranslateX) ? 'white' : 'primary'"
+            :style="{
+              zIndex: '10',
+              transform: `translateX(${translateX}px)`,
+              position: 'absolute',
+              right: '-45px',
+              boxShadow: `0px 0px 0px ${Math.abs(translateX) / 8}px rgb(88 93 255 / 66%)`,
+            }"
           />
           <div v-if="viewerStore.isAlreadyVisitToday" :class="[$style.warning, 'text-bold']">
             Дневной лимит исчерпан. Приходи завтра.
@@ -210,6 +227,13 @@
     padding: 15px;
 
     .wrapper {
+      position: relative;
+      overflow: hidden;
+
+      .buttonNext {
+        transition: transform 0.5s ease-in-out;
+      }
+
       .testTitle {
         font-size: 1.25rem;
         font-weight: 700;
