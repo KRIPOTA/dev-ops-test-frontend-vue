@@ -1,1 +1,1 @@
-export * from './tests.store'
+export * from './questions.store'

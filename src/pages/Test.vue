@@ -3,6 +3,7 @@
   import { Notify } from 'quasar'
   import { computed, onMounted, ref, watch } from 'vue'
 
+  import { QuestionComponent } from '../entities/questions'
   import { useQuestionsStore } from '../entities/questions/model/questions.store'
   import { TgUserDto, useViewerStore } from '../entities/viewer'
   import AppPageLayout from '../layouts/AppPageLayout.vue'
@@ -12,14 +13,21 @@
   const viewerStore = useViewerStore()
 
   //refs
-  const currentQuestionIndex = ref(0)
+  const currentIndex = ref(0)
   const answerIndex = ref(0)
+  const translateX = ref(0)
+  const startX = ref(0)
+  const endX = ref(0)
+  const needClass = ref(false)
+  const isNotifyAlreadyShown = ref(false)
 
   //computed
-  const currentQuestion = computed(() => questionsStore?.questions[currentQuestionIndex.value])
+  const maxTranslateX = computed(() => -window.innerWidth / 3.5 || -130)
+
+  const currentQuestion = computed(() => questionsStore?.questions[currentIndex.value])
 
   const questionsIsOver = computed(
-    () => currentQuestionIndex.value == OVER_QUESTION_INDEX && isBoolean(currentQuestion.value.isAnswerCorrect)
+    () => currentIndex.value == OVER_QUESTION_INDEX && isBoolean(currentQuestion.value.isAnswerCorrect)
   )
 
   const percentAnswerCorrect = computed(() => {
@@ -46,7 +54,7 @@
       viewerStore.viewer.stats.questionsAnswerTrue = (viewerStore.viewer?.stats.questionsAnswerTrue || 0) + 1
     }
 
-    if (viewerStore.loginFirst && currentQuestionIndex.value == 0 && isBoolean(currentQuestion.value.isAnswerCorrect)) {
+    if (viewerStore.loginFirst && currentIndex.value == 0 && isBoolean(currentQuestion.value.isAnswerCorrect)) {
       Notify.create({
         type: 'warning',
         message: 'Для перехода к следующему вопросу сделай свайп вправо',
@@ -55,9 +63,53 @@
     }
   }
 
-  const onSwipe = () => {
-    if (currentQuestion.value.isAnswerCorrect == null || questionsIsOver.value) return
-    currentQuestionIndex.value = currentQuestionIndex.value + 1
+  const touchStart = (e) => {
+    if (currentIndex.value < questionsStore?.questions.length - 1) {
+      startX.value = e.touches[0].clientX
+    }
+  }
+
+  const touchMove = (e) => {
+    if (currentQuestion.value.isAnswerCorrect == null) {
+      if (!isNotifyAlreadyShown.value) {
+        Notify.create({
+          message: 'Для того, чтобы перейти к следующему вопросу, нужно ответить на этот',
+          type: 'warning',
+        })
+      }
+      isNotifyAlreadyShown.value = true
+      startX.value = 0
+      endX.value = 0
+      translateX.value = 0
+      return
+    }
+    if (currentIndex.value < questionsStore?.questions.length - 1) {
+      endX.value = e.touches[0].clientX
+      if ((endX.value - startX.value) / 2 < maxTranslateX.value) {
+        translateX.value = maxTranslateX.value
+      } else {
+        translateX.value = (endX.value - startX.value) / 2
+      }
+    }
+  }
+  const touchEnd = () => {
+    if (currentQuestion.value.isAnswerCorrect == null) {
+      return
+    }
+    if (translateX.value > maxTranslateX.value) {
+      needClass.value = true
+      startX.value = 0
+      endX.value = 0
+      translateX.value = 0
+      setTimeout(() => {
+        needClass.value = false
+      }, 500)
+    } else {
+      currentIndex.value += 1
+      startX.value = 0
+      endX.value = 0
+      translateX.value = 0
+    }
   }
 
   //hooks
@@ -80,41 +132,37 @@
 <template>
   <AppPageLayout>
     <template #content>
-      <div v-if="viewerStore.isInited" :class="$style.container">
-        <div v-touch-swipe.left="onSwipe" :class="[$style.wrapper, 'flex items-center justify-center']">
-          <div
+      <div
+        v-if="viewerStore.isInited"
+        :class="$style.container"
+        @touchmove="touchMove"
+        @touchstart="touchStart"
+        @touchend="touchEnd"
+      >
+        <div :class="[$style.wrapper, 'flex items-center justify-center']">
+          <QuestionComponent
             v-if="!questionsStore.isLoading && currentQuestion"
-            :class="[$style.question, 'full-width flex column items-center justify-center']"
-          >
-            <div :class="[$style.label, 'text-bold']">{{ currentQuestion?.question }}</div>
-            <div class="full-width flex column">
-              <div
-                :class="[
-                  'q-mt-sm',
-                  $style.option,
-                  {
-                    [$style.optionCorrect]:
-                      index == currentQuestion?.correctAnswerIndex && isBoolean(currentQuestion?.isAnswerCorrect),
-                    [$style.optionUnCorrect]: currentQuestion?.isAnswerCorrect == false && index == answerIndex,
-                    [$style.optionBlink]:
-                      currentQuestion?.isAnswerCorrect == false && index == currentQuestion?.correctAnswerIndex,
-                  },
-                ]"
-                v-for="(text, index) in currentQuestion?.answers"
-                :key="index"
-                color="primary"
-                @click="chooseOption(index)"
-              >
-                {{ text }}
-              </div>
-            </div>
-            <div :class="$style.count">
-              Вопрос {{ currentQuestionIndex + 1 }} из {{ questionsStore.questions.length }}
-            </div>
-          </div>
+            :question="currentQuestion"
+            :answer-index="answerIndex"
+            :index="currentIndex"
+            @choose-option="chooseOption($event)"
+          />
 
           <QSpinner v-if="questionsStore.isLoading" style="position: absolute; top: 50%; left: 42%" />
-
+          <QBtn
+            :class="{ [$style.buttonNext]: needClass }"
+            round
+            :color="Math.abs(translateX) >= Math.abs(maxTranslateX) ? 'primary' : 'white'"
+            icon="arrow_forward"
+            :text-color="Math.abs(translateX) >= Math.abs(maxTranslateX) ? 'white' : 'primary'"
+            :style="{
+              zIndex: '10',
+              transform: `translateX(${translateX}px)`,
+              position: 'absolute',
+              right: '-45px',
+              boxShadow: `0px 0px 0px ${Math.abs(translateX) / 8}px rgb(88 93 255 / 66%)`,
+            }"
+          />
           <div v-if="viewerStore.isAlreadyVisitToday" :class="[$style.warning, 'text-bold']">
             Дневной лимит исчерпан. Приходи завтра.
           </div>
@@ -155,6 +203,13 @@
     padding: 15px;
 
     .wrapper {
+      position: relative;
+      overflow: hidden;
+
+      .buttonNext {
+        transition: transform 0.5s ease-in-out;
+      }
+
       .testTitle {
         font-size: 1.25rem;
         font-weight: 700;
@@ -168,55 +223,6 @@
         font-size: 16px;
         border-radius: 5px;
         background: rgb(255, 179, 40);
-      }
-
-      .question {
-        .label {
-          font-size: 20px;
-          font-weight: 200;
-          padding: 0 35px;
-          line-height: 25px;
-          margin-bottom: 7px;
-          color: white;
-          text-align: center;
-        }
-
-        .option {
-          border-radius: 10px;
-          padding: 5px 25px;
-          background: #585dff;
-          width: 100%;
-          font-size: 20px;
-          text-align: center;
-          color: #ffffff;
-
-          &Correct {
-            background: rgb(96 169 23);
-          }
-
-          &UnCorrect {
-            background: #e51400;
-          }
-
-          &Blink {
-            animation: blink 2s infinite;
-          }
-
-          @keyframes blink {
-            70% {
-              opacity: 70%;
-            }
-          }
-        }
-
-        .count {
-          padding: 5px;
-          color: white;
-          font-size: 16px;
-          font-weight: 800;
-          margin-left: auto;
-          margin-top: 10px;
-        }
       }
 
       .statistics {
