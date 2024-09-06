@@ -1,8 +1,9 @@
 <script setup lang="ts">
   import { isBoolean } from 'lodash'
-  import { Notify, setCssVar } from 'quasar'
+  import { Notify } from 'quasar'
   import { computed, onMounted, ref, watch } from 'vue'
 
+  import { QuestionComponent } from '../entities/questions'
   import { useQuestionsStore } from '../entities/questions/model/questions.store'
   import { TgUserDto, useViewerStore } from '../entities/viewer'
   import AppPageLayout from '../layouts/AppPageLayout.vue'
@@ -19,8 +20,6 @@
   const endX = ref(0)
   const needClass = ref(false)
   const isNotifyAlreadyShown = ref(false)
-  const hideCurrent = ref(false)
-  const hideNext = ref(false)
 
   //computed
   const maxTranslateX = computed(() => -window.innerWidth / 3.5 || -130)
@@ -62,11 +61,6 @@
         position: 'top',
       })
     }
-  }
-
-  const onSwipe = () => {
-    if (currentQuestion.value.isAnswerCorrect == null || questionsIsOver.value) return
-    currentIndex.value = currentIndex.value + 1
   }
 
   const touchStart = (e) => {
@@ -127,7 +121,6 @@
   })
 
   onMounted(async () => {
-    // setCssVar('my-color', '#f5f5f5')
     const tgWebApp = window['Telegram'].WebApp || null
     if (!tgWebApp) return
     const tgUser = tgWebApp?.initDataUnsafe?.user || (null as TgUserDto | null)
@@ -139,38 +132,21 @@
 <template>
   <AppPageLayout>
     <template #content>
-      <div v-if="viewerStore.isInited" :class="$style.container">
+      <div
+        v-if="viewerStore.isInited"
+        :class="$style.container"
+        @touchmove="touchMove"
+        @touchstart="touchStart"
+        @touchend="touchEnd"
+      >
         <div :class="[$style.wrapper, 'flex items-center justify-center']">
-          <div
-            @touchstart="touchStart"
-            @touchmove="touchMove"
-            @touchend="touchEnd"
+          <QuestionComponent
             v-if="!questionsStore.isLoading && currentQuestion"
-            :class="[$style.question, 'full-width flex column items-center justify-center']"
-          >
-            <div :class="[$style.label, 'text-bold']">{{ currentQuestion?.question }}</div>
-            <div class="full-width flex column">
-              <div
-                :class="[
-                  'q-mt-sm',
-                  $style.option,
-                  {
-                    [$style.optionCorrect]:
-                      index == currentQuestion?.correctAnswerIndex && isBoolean(currentQuestion?.isAnswerCorrect),
-                    [$style.optionUnCorrect]: currentQuestion?.isAnswerCorrect == false && index == answerIndex,
-                    [$style.optionBlink]:
-                      currentQuestion?.isAnswerCorrect == false && index == currentQuestion?.correctAnswerIndex,
-                  },
-                ]"
-                v-for="(text, index) in currentQuestion?.answers"
-                :key="index"
-                @click="chooseOption(index)"
-              >
-                {{ text }}
-              </div>
-            </div>
-            <div :class="$style.count">Вопрос {{ currentIndex + 1 }} из {{ questionsStore.questions.length }}</div>
-          </div>
+            :question="currentQuestion"
+            :answer-index="answerIndex"
+            :index="currentIndex"
+            @choose-option="chooseOption($event)"
+          />
 
           <QSpinner v-if="questionsStore.isLoading" style="position: absolute; top: 50%; left: 42%" />
           <QBtn
@@ -247,55 +223,6 @@
         font-size: 16px;
         border-radius: 5px;
         background: rgb(255, 179, 40);
-      }
-
-      .question {
-        .label {
-          font-size: 20px;
-          font-weight: 200;
-          padding: 0 35px;
-          line-height: 25px;
-          margin-bottom: 7px;
-          color: white;
-          text-align: center;
-        }
-
-        .option {
-          border-radius: 10px;
-          padding: 5px 25px;
-          background: #585dff;
-          width: 100%;
-          font-size: 20px;
-          text-align: center;
-          color: #ffffff;
-
-          &Correct {
-            background: rgb(96 169 23);
-          }
-
-          &UnCorrect {
-            background: #e51400;
-          }
-
-          &Blink {
-            animation: blink 2s infinite;
-          }
-
-          @keyframes blink {
-            70% {
-              opacity: 70%;
-            }
-          }
-        }
-
-        .count {
-          padding: 5px;
-          color: white;
-          font-size: 16px;
-          font-weight: 800;
-          margin-left: auto;
-          margin-top: 10px;
-        }
       }
 
       .statistics {
