@@ -11,19 +11,32 @@ export const useQuestionsStore = defineStore({
   state: (): QuestionsState => ({
     questions: [],
     isLoading: false,
+    isAdditionalQuestionsLoaded: false,
   }),
 
   getters: {},
 
   actions: {
     init() {
-      this.load()
+      this.loadByDate()
     },
 
-    async load() {
+    async loadAdditionalQuestions() {
+      try {
+        const response = (await questions.get()) || []
+        const additionalQuestions = response.map((q) => ({ ...q, isAnswerCorrect: null }))
+        this.questions = [...this.questions, ...additionalQuestions]
+        this.isAdditionalQuestionsLoaded = true
+      } catch (e) {
+        Notify.create({ type: 'negative', message: 'Произошла ошибка при загрузке вопросов' })
+        console.debug('Произошла ошибка при получении вопросов', { e })
+      }
+    },
+
+    async loadByDate() {
       try {
         this.isLoading = true
-        const response = (await questions.get()) || []
+        const response = (await questions.getByDate()) || []
 
         this.questions = response.map((q) => ({ ...q, isAnswerCorrect: null }))
       } catch (e) {
@@ -36,12 +49,14 @@ export const useQuestionsStore = defineStore({
 
     async updateQuestions() {
       try {
-        this.questions.forEach((q) => {
-          q.datePublishEveryDay = new Date()
-          q.countTrueAnswer = q.countTrueAnswer + Number(!!q.isAnswerCorrect)
-          q.countPublish = q.countPublish + 1
-        })
-        await questions.update(this.questions)
+        if (!this.isAdditionalQuestionsLoaded) {
+          this.questions.forEach((q) => {
+            q.datePublishEveryDay = new Date()
+            q.countTrueAnswer = q.countTrueAnswer + Number(!!q.isAnswerCorrect)
+            q.countPublish = q.countPublish + 1
+          })
+          await questions.update(this.questions)
+        }
       } catch (e) {
         Notify.create({ type: 'negative', message: 'Произошла ошибка при сохранении вопросов' })
         console.debug('Произошла ошибка при сохранении вопросов', { e })

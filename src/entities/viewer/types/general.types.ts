@@ -15,5 +15,6 @@ export interface TgUserDto {
 export interface ViewerState {
   viewer: UserDto | null
   isInited: boolean
+  isStatsUpdated: boolean
   initialStats: Partial<UserStatsDto>
 }

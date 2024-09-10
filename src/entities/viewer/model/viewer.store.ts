@@ -13,6 +13,7 @@ export const useViewerStore = defineStore({
   state: (): ViewerState => ({
     viewer: null,
     isInited: false,
+    isStatsUpdated: false,
     initialStats: {
       questionsAnswer: 0,
       questionsAnswerTrue: 0,
@@ -112,6 +113,7 @@ export const useViewerStore = defineStore({
           this.viewer.stats.loginLast = new Date()
           this.viewer.stats.loginCountDays = this.viewer.stats.loginCountDays + 1
           users.updateStats(this.viewer.stats)
+          this.isStatsUpdated = true
         }
       } catch (e) {
         Notify.create({ type: 'negative', message: 'Произошла ошибка при обновлении статистики пользователя' })

@@ -25,4 +25,5 @@ export interface Question extends QuestionDto {
 export interface QuestionsState {
   questions: Question[]
   isLoading: boolean
+  isAdditionalQuestionsLoaded: boolean
 }

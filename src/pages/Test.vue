@@ -27,7 +27,10 @@
   const currentQuestion = computed(() => questionsStore?.questions[currentIndex.value])
 
   const questionsIsOver = computed(
-    () => currentIndex.value == OVER_QUESTION_INDEX && isBoolean(currentQuestion.value.isAnswerCorrect)
+    () =>
+      (!questionsStore.isAdditionalQuestionsLoaded
+        ? currentIndex.value == OVER_QUESTION_INDEX
+        : currentIndex.value == OVER_QUESTION_INDEX + 20) && isBoolean(currentQuestion.value.isAnswerCorrect)
   )
 
   const percentAnswerCorrect = computed(() => {
@@ -36,7 +39,7 @@
   })
 
   //methods
-  const chooseOption = (index: number) => {
+  const chooseOption = async (index: number) => {
     if (isBoolean(currentQuestion.value.isAnswerCorrect)) return
 
     const isAnswerCorrect = index == currentQuestion.value.correctAnswerIndex
@@ -60,6 +63,22 @@
         message: 'Для перехода к следующему вопросу сделай свайп вправо',
         position: 'top',
       })
+    }
+
+    if (questionsIsOver.value) {
+      if (!questionsStore.isAdditionalQuestionsLoaded) await questionsStore.updateQuestions()
+      if (viewerStore.percentCorrectAnswer.today >= 90 && !questionsStore.isAdditionalQuestionsLoaded) {
+        Notify.create({
+          type: 'positive',
+          message: 'Вы верно решили 90% вопросов! За это мы добавляем вам еще +20 вопросов!',
+          position: 'top',
+        })
+        await questionsStore.loadAdditionalQuestions()
+      }
+      if (questionsStore.isAdditionalQuestionsLoaded && viewerStore.isStatsUpdated) {
+        questionsStore.isAdditionalQuestionsLoaded = false
+      }
+      await viewerStore.updateUserStats()
     }
   }
 
@@ -112,14 +131,6 @@
     }
   }
 
-  //hooks
-  watch(questionsIsOver, async () => {
-    if (questionsIsOver.value) {
-      await questionsStore.updateQuestions()
-      await viewerStore.updateUserStats()
-    }
-  })
-
   onMounted(async () => {
     const tgWebApp = window['Telegram'].WebApp || null
     if (!tgWebApp) return
@@ -163,7 +174,10 @@
               boxShadow: `0px 0px 0px ${Math.abs(translateX) / 8}px rgb(88 93 255 / 66%)`,
             }"
           />
-          <div v-if="viewerStore.isAlreadyVisitToday" :class="[$style.warning, 'text-bold']">
+          <div
+            v-if="viewerStore.isAlreadyVisitToday && !questionsStore.isAdditionalQuestionsLoaded"
+            :class="[$style.warning, 'text-bold']"
+          >
             Дневной лимит исчерпан. Приходи завтра.
           </div>
 

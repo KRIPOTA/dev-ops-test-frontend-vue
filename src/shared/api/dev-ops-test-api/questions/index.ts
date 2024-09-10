@@ -5,8 +5,12 @@ import { QuestionDto } from './dto/question.dto'
 export * from './dto'
 
 export const questions = {
-  async get() {
-    return DEV_OPS_TEST_API.get<QuestionDto[]>('questions').then((response) => response?.data)
+  async get(limit = 20) {
+    return DEV_OPS_TEST_API.get<QuestionDto[]>(`questions?limit=${limit}`).then((response) => response?.data)
+  },
+
+  async getByDate() {
+    return DEV_OPS_TEST_API.get<QuestionDto[]>('questions/by-date').then((response) => response?.data)
   },
 
   async create(dto: CreateQuestionDto) {
