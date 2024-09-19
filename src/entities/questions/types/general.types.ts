@@ -24,6 +24,7 @@ export interface Question extends QuestionDto {
 
 export interface QuestionsState {
   questions: Question[]
+  tab: 'stats' | 'leaders'
   isLoading: boolean
   isAdditionalQuestionsLoaded: boolean
 }

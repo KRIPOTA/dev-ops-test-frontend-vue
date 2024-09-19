@@ -1,9 +1,9 @@
 <script setup lang="ts">
   import { isBoolean } from 'lodash'
   import { Notify } from 'quasar'
-  import { computed, onMounted, ref, watch } from 'vue'
+  import { computed, onMounted, ref } from 'vue'
 
-  import { QuestionComponent } from '../entities/questions'
+  import { QuestionComponent, Tabs } from '../entities/questions'
   import { useQuestionsStore } from '../entities/questions/model/questions.store'
   import { TgUserDto, useViewerStore } from '../entities/viewer'
   import AppPageLayout from '../layouts/AppPageLayout.vue'
@@ -181,29 +181,33 @@
             Дневной лимит исчерпан. Приходи завтра.
           </div>
 
-          <div :class="[$style.statistics, 'flex column justify-center items-center']">
-            <div class="q-mt-lg">
+          <Tabs class="q-mt-md" :tab="questionsStore.tab" @update:tab="questionsStore.tab = $event" />
+
+          <div
+            v-if="questionsStore.tab == 'stats'"
+            :class="[$style.statistics, 'flex column justify-center items-center']"
+          >
+            <div class="q-mt-lg q-mb-lg">
               <QTable
                 :class="$style.table"
                 flat
-                bordered
                 :rows="viewerStore.rows"
                 :columns="viewerStore.columns || []"
                 hide-bottom
                 wrap-cells
                 row-key="name"
                 separator="cell"
-                title="Статистика"
               />
             </div>
 
             <div
               v-if="isBoolean(currentQuestion?.isAnswerCorrect) && !questionsStore.isLoading"
-              :class="[$style.info, 'text-bold q-mt-lg']"
+              :class="[$style.info, 'text-bold']"
             >
               На этот вопрос верно ответило: {{ percentAnswerCorrect }}%
             </div>
           </div>
+          <div class="q-mt-lg text-white" v-else>Скоро тут появится новый контент...</div>
         </div>
       </div>
       <QSpinner v-else color="primary" size="3em" style="position: absolute; top: 50%; left: 42%" />
@@ -248,6 +252,13 @@
         }
 
         .table {
+          background: #23272d;
+          border-width: 0px;
+          border-radius: 15px;
+          padding: 7px 15px;
+          color: white;
+          box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
+
           :global(.q-table__top) {
             justify-content: center;
             border-bottom: 1px solid #d4d4d4;
@@ -256,7 +267,7 @@
           table,
           td,
           th {
-            font-size: 14px;
+            font-size: 16px;
           }
         }
       }

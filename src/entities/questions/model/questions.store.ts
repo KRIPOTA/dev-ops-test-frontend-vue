@@ -11,6 +11,7 @@ export const useQuestionsStore = defineStore({
   state: (): QuestionsState => ({
     questions: [],
     isLoading: false,
+    tab: 'stats',
     isAdditionalQuestionsLoaded: false,
   }),
 
