@@ -5,12 +5,14 @@
 
   import { QuestionComponent, Tabs } from '../entities/questions'
   import { useQuestionsStore } from '../entities/questions/model/questions.store'
+  import { useThemesStore } from '../entities/themes'
   import { TgUserDto, useViewerStore } from '../entities/viewer'
   import AppPageLayout from '../layouts/AppPageLayout.vue'
 
   const OVER_QUESTION_INDEX = 19
   const questionsStore = useQuestionsStore()
   const viewerStore = useViewerStore()
+  const themesStore = useThemesStore()
 
   //refs
   const currentIndex = ref(0)
@@ -136,7 +138,7 @@
     if (!tgWebApp) return
     const tgUser = tgWebApp?.initDataUnsafe?.user || (null as TgUserDto | null)
     await viewerStore.init(tgUser)
-
+    await themesStore.init()
     if (!viewerStore.isAlreadyVisitToday) questionsStore.init()
   })
 </script>
