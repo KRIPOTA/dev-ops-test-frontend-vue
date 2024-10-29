@@ -6,25 +6,25 @@
   import { QuestionComponent, Tabs } from '../entities/questions'
   import { useQuestionsStore } from '../entities/questions/model/questions.store'
   import { useThemesStore } from '../entities/themes'
-  import { TgUserDto, useViewerStore } from '../entities/viewer'
+  import { useViewerStore } from '../entities/viewer'
   import AppPageLayout from '../layouts/AppPageLayout.vue'
 
   const OVER_QUESTION_INDEX = 19
+  const themesStore = useThemesStore()
   const questionsStore = useQuestionsStore()
   const viewerStore = useViewerStore()
-  const themesStore = useThemesStore()
 
   //refs
   const currentIndex = ref(0)
   const answerIndex = ref(0)
-  const translateX = ref(0)
-  const startX = ref(0)
-  const endX = ref(0)
-  const needClass = ref(false)
-  const isNotifyAlreadyShown = ref(false)
+  // const translateX = ref(0)
+  // const startX = ref(0)
+  // const endX = ref(0)
+  // const needClass = ref(false)
+  // const isNotifyAlreadyShown = ref(false)
 
   //computed
-  const maxTranslateX = computed(() => -window.innerWidth / 3.5 || -130)
+  // const maxTranslateX = computed(() => -window.innerWidth / 3.5 || -130)
 
   const currentQuestion = computed(() => questionsStore?.questions[currentIndex.value])
 
@@ -84,74 +84,67 @@
     }
   }
 
-  const touchStart = (e) => {
-    if (currentIndex.value < questionsStore?.questions.length - 1) {
-      startX.value = e.touches[0].clientX
-    }
+  const next = () => {
+    currentIndex.value += 1
   }
 
-  const touchMove = (e) => {
-    if (currentQuestion.value.isAnswerCorrect == null) {
-      if (!isNotifyAlreadyShown.value) {
-        Notify.create({
-          message: 'Для того, чтобы перейти к следующему вопросу, нужно ответить на этот',
-          type: 'warning',
-        })
-      }
-      isNotifyAlreadyShown.value = true
-      startX.value = 0
-      endX.value = 0
-      translateX.value = 0
-      return
-    }
-    if (currentIndex.value < questionsStore?.questions.length - 1) {
-      endX.value = e.touches[0].clientX
-      if ((endX.value - startX.value) / 2 < maxTranslateX.value) {
-        translateX.value = maxTranslateX.value
-      } else {
-        translateX.value = (endX.value - startX.value) / 2
-      }
-    }
-  }
-  const touchEnd = () => {
-    if (currentQuestion.value.isAnswerCorrect == null) {
-      return
-    }
-    if (translateX.value > maxTranslateX.value) {
-      needClass.value = true
-      startX.value = 0
-      endX.value = 0
-      translateX.value = 0
-      setTimeout(() => {
-        needClass.value = false
-      }, 500)
-    } else {
-      currentIndex.value += 1
-      startX.value = 0
-      endX.value = 0
-      translateX.value = 0
-    }
-  }
+  // const touchStart = (e) => {
+  //   if (currentIndex.value < questionsStore?.questions.length - 1) {
+  //     startX.value = e.touches[0].clientX
+  //   }
+  // }
+
+  // const touchMove = (e) => {
+  //   if (currentQuestion.value.isAnswerCorrect == null) {
+  //     if (!isNotifyAlreadyShown.value) {
+  //       Notify.create({
+  //         message: 'Для того, чтобы перейти к следующему вопросу, нужно ответить на этот',
+  //         type: 'warning',
+  //       })
+  //     }
+  //     isNotifyAlreadyShown.value = true
+  //     startX.value = 0
+  //     endX.value = 0
+  //     translateX.value = 0
+  //     return
+  //   }
+  //   if (currentIndex.value < questionsStore?.questions.length - 1) {
+  //     endX.value = e.touches[0].clientX
+  //     if ((endX.value - startX.value) / 2 < maxTranslateX.value) {
+  //       translateX.value = maxTranslateX.value
+  //     } else {
+  //       translateX.value = (endX.value - startX.value) / 2
+  //     }
+  //   }
+  // }
+  // const touchEnd = () => {
+  //   if (currentQuestion.value.isAnswerCorrect == null) {
+  //     return
+  //   }
+  //   if (translateX.value > maxTranslateX.value) {
+  //     needClass.value = true
+  //     startX.value = 0
+  //     endX.value = 0
+  //     translateX.value = 0
+  //     setTimeout(() => {
+  //       needClass.value = false
+  //     }, 500)
+  //   } else {
+  //     currentIndex.value += 1
+  //     startX.value = 0
+  //     endX.value = 0
+  //     translateX.value = 0
+  //   }
+  // }
 
   onMounted(async () => {
-    const tgWebApp = window['Telegram'].WebApp || null
-    if (!tgWebApp) return
-    const tgUser = tgWebApp?.initDataUnsafe?.user || (null as TgUserDto | null)
-    await viewerStore.init(tgUser)
-    await themesStore.init()
     if (!viewerStore.isAlreadyVisitToday) questionsStore.init()
   })
 </script>
 <template>
   <AppPageLayout>
     <template #content>
-      <div
-        v-if="viewerStore.isInited"
-        :class="$style.container"
-        @touchmove="touchMove"
-        @touchstart="touchStart"
-        @touchend="touchEnd"
-      >
+      <div v-if="viewerStore.isInited" :class="$style.container">
         <div :class="[$style.wrapper, 'flex items-center justify-center']">
           <QuestionComponent
             v-if="!questionsStore.isLoading && currentQuestion"
@@ -159,10 +152,11 @@
             :answer-index="answerIndex"
             :index="currentIndex"
             @choose-option="chooseOption($event)"
+            @next="next"
           />
 
           <QSpinner v-if="questionsStore.isLoading" style="position: absolute; top: 50%; left: 42%" />
-          <QBtn
+          <!-- <QBtn
             :class="{ [$style.buttonNext]: needClass }"
             round
             :color="Math.abs(translateX) >= Math.abs(maxTranslateX) ? 'primary' : 'white'"
@@ -175,7 +169,7 @@
               right: '-45px',
               boxShadow: `0px 0px 0px ${Math.abs(translateX) / 8}px rgb(88 93 255 / 66%)`,
             }"
-          />
+          /> -->
           <div
             v-if="viewerStore.isAlreadyVisitToday && !questionsStore.isAdditionalQuestionsLoaded"
             :class="[$style.warning, 'text-bold']"

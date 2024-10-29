@@ -1,19 +1,24 @@
+import { keyBy } from 'lodash'
 import { acceptHMRUpdate, defineStore } from 'pinia'
 
-import { themes } from '/@src/shared/api/dev-ops-test-api'
+import { ThemeDto, themes } from '/@src/shared/api/dev-ops-test-api'
 
 import { ThemesState } from '../types/general.types'
 
+const randomTheme: ThemeDto = { id: 'random', theme: 'Случайные темы', tags: [] }
+
 export const useThemesStore = defineStore({
-  id: 'viewer',
+  id: 'themes',
 
   state: (): ThemesState => ({
     themes: [],
-    current: null,
+    current: randomTheme,
     isLoading: false,
   }),
 
   getters: {
+    themesById: (state): Record<string, ThemeDto | undefined> => keyBy(state.themes, 'id'),
+    themesAsDropdown: (state): ThemeDto[] => [randomTheme, ...state.themes],
     currentTags: (state): string[] => state.current?.tags || [],
   },
 

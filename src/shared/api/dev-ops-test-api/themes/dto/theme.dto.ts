@@ -1,5 +1,5 @@
 export interface ThemeDto {
-  _id: string
+  id: string
   theme: string
   tags: string[]
 }

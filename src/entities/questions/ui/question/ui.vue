@@ -8,6 +8,7 @@
 
   const emit = defineEmits<{
     (e: 'chooseOption', index: number): void
+    (e: 'next'): void
   }>()
 
   defineProps<{
@@ -37,7 +38,10 @@
         {{ text }}
       </div>
     </div>
-    <div :class="$style.count">Вопрос {{ index + 1 }} из {{ questionsStore.questions.length }}</div>
+    <div class="full-width flex items-center justify-between" style="margin-top: 10px">
+      <div :class="$style.count">Вопрос {{ index + 1 }} из {{ questionsStore.questions.length }}</div>
+      <QBtn :class="$style.button" label="Далее" icon-right="arrow_forward" color="green" @click="emit('next')" />
+    </div>
   </div>
 </template>
 
@@ -86,8 +90,13 @@
       color: white;
       font-size: 16px;
       font-weight: 800;
-      margin-left: auto;
-      margin-top: 10px;
+    }
+
+    .button {
+      min-height: auto;
+      i {
+        font-size: 20px;
+      }
     }
   }
 </style>
