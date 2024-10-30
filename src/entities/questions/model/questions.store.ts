@@ -1,8 +1,9 @@
 import { acceptHMRUpdate, defineStore } from 'pinia'
 import { Notify } from 'quasar'
 
-import { questions } from '/@src/shared/api/dev-ops-test-api'
+import { QuestionParams, questions } from '/@src/shared/api/dev-ops-test-api'
 
+import { useThemesStore } from '../../themes'
 import { QuestionsState } from '../types/general.types'
 
 export const useQuestionsStore = defineStore({
@@ -11,27 +12,41 @@ export const useQuestionsStore = defineStore({
   state: (): QuestionsState => ({
     questions: [],
     isLoading: false,
-    tab: 'stats',
     isAdditionalQuestionsLoaded: false,
   }),
 
   getters: {},
 
   actions: {
-    init() {
-      this.loadByDate()
+    async init() {
+      const themesStore = useThemesStore()
+      if (themesStore.isCurrentThemeRandom) await this.loadByDate()
+      else await this.loadByCurrentTags()
     },
 
-    async loadAdditionalQuestions() {
+    async getQuestions(params: QuestionParams) {
       try {
-        const response = (await questions.get()) || []
-        const additionalQuestions = response.map((q) => ({ ...q, isAnswerCorrect: null }))
-        this.questions = [...this.questions, ...additionalQuestions]
-        this.isAdditionalQuestionsLoaded = true
+        const response = await questions.get(params)
+        return response
       } catch (e) {
         Notify.create({ type: 'negative', message: 'Произошла ошибка при загрузке вопросов' })
         console.debug('Произошла ошибка при получении вопросов', { e })
       }
+    },
+
+    async loadAdditionalQuestions(limit = 20) {
+      const questions = (await this.getQuestions({ limit, tags: useThemesStore().currentTags })) || []
+      const additionalQuestions = questions.map((q) => ({ ...q, isAnswerCorrect: null }))
+      this.questions = [...this.questions, ...additionalQuestions]
+      this.isAdditionalQuestionsLoaded = true
+    },
+
+    async loadByCurrentTags() {
+      this.isLoading = true
+      const themesStore = useThemesStore()
+      const questions = (await this.getQuestions({ limit: 10, tags: themesStore.currentTags })) || []
+      this.questions = questions.map((q) => ({ ...q, isAnswerCorrect: null }))
+      this.isLoading = false
     },
 
     async loadByDate() {

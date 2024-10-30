@@ -15,6 +15,7 @@
     question: Question
     answerIndex: number
     index: number
+    disableNextButton: boolean
   }>()
 </script>
 <template>
@@ -40,7 +41,14 @@
     </div>
     <div class="full-width flex items-center justify-between" style="margin-top: 10px">
       <div :class="$style.count">Вопрос {{ index + 1 }} из {{ questionsStore.questions.length }}</div>
-      <QBtn :class="$style.button" label="Далее" icon-right="arrow_forward" color="green" @click="emit('next')" />
+      <QBtn
+        :class="$style.button"
+        :disable="disableNextButton"
+        label="Далее"
+        icon-right="arrow_forward"
+        color="green"
+        @click="emit('next')"
+      />
     </div>
   </div>
 </template>

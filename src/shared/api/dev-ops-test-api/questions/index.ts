@@ -1,12 +1,13 @@
 import { DEV_OPS_TEST_API } from '../api'
 import { CreateQuestionDto, UpdateQuestionDto } from './dto'
+import { QuestionParams } from './dto/params-question'
 import { QuestionDto } from './dto/question.dto'
 
 export * from './dto'
 
 export const questions = {
-  async get(limit = 20) {
-    return DEV_OPS_TEST_API.get<QuestionDto[]>(`questions?limit=${limit}`).then((response) => response?.data)
+  async get(params: QuestionParams) {
+    return DEV_OPS_TEST_API.get<QuestionDto[]>('questions', { params }).then((response) => response?.data)
   },
 
   async getByDate() {

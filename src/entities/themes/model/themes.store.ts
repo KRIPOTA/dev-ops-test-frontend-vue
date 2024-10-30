@@ -20,6 +20,7 @@ export const useThemesStore = defineStore({
     themesById: (state): Record<string, ThemeDto | undefined> => keyBy(state.themes, 'id'),
     themesAsDropdown: (state): ThemeDto[] => [randomTheme, ...state.themes],
     currentTags: (state): string[] => state.current?.tags || [],
+    isCurrentThemeRandom: (state): boolean => state.current?.id == 'random',
   },
 
   actions: {

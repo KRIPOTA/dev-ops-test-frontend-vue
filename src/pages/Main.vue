@@ -2,7 +2,7 @@
   import { onMounted } from 'vue'
 
   import { useThemesStore } from '../entities/themes'
-  import { TgUserDto, useViewerStore } from '../entities/viewer'
+  import { Stats, TgUserDto, useViewerStore, WarningLimit } from '../entities/viewer'
   import AppPageLayout from '../layouts/AppPageLayout.vue'
 
   const viewerStore = useViewerStore()
@@ -20,22 +20,30 @@
 <template>
   <AppPageLayout>
     <template #content>
-      <div
-        v-if="viewerStore.isInited && !themesStore.isLoading"
-        class="flex items-center justify-center"
-        style="height: 100px"
-      >
-        <QSelect
-          :class="$style.select"
-          v-model="themesStore.current"
-          :options="themesStore.themesAsDropdown"
-          square
-          outlined
-          option-value="id"
-          option-label="theme"
-        />
-        <QBtn class="q-ml-md" color="primary" label="начать" :to="{ name: 'TEST' }" />
-      </div>
+      <template v-if="viewerStore.isInited && !themesStore.isLoading">
+        <div v-if="viewerStore.isAlreadyVisitToday" style="padding: 0 15px">
+          <WarningLimit class="q-mt-md" />
+          <Stats />
+        </div>
+        <div v-else style="padding: 0 15px" class="flex column q-mt-md">
+          <div style="font-size: 13px" class="text-center text-white">
+            Выберите нужную тему или проверьте знания по разным
+          </div>
+          <div class="flex items-center justify-center q-mt-xs">
+            <QSelect
+              :class="$style.select"
+              v-model="themesStore.current"
+              :options="themesStore.themesAsDropdown"
+              square
+              outlined
+              option-value="id"
+              option-label="theme"
+            />
+            <QBtn class="q-ml-md" color="primary" label="начать" :to="{ name: 'TEST' }" />
+          </div>
+        </div>
+      </template>
+
       <QSpinner v-else color="primary" size="3em" style="position: absolute; top: 50%; left: 42%" />
     </template>
   </AppPageLayout>

@@ -12,6 +12,7 @@ export const useViewerStore = defineStore({
 
   state: (): ViewerState => ({
     viewer: null,
+    tab: 'stats',
     isInited: false,
     isStatsUpdated: false,
     initialStats: {
