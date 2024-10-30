@@ -25,7 +25,10 @@
           <WarningLimit class="q-mt-md" />
           <Stats />
         </div>
-        <div v-else style="padding: 0 15px" class="flex column q-mt-md">
+        <div v-else style="padding: 15px" class="flex column">
+          <div style="font-size: 22px; font-weight: bold" class="text-center text-white q-mb-sm">
+            Тренажёр знаний<br />специалистов<br />SysOps/DevOps/SRE
+          </div>
           <div style="font-size: 13px" class="text-center text-white">
             Выберите нужную тему или проверьте знания по разным
           </div>
